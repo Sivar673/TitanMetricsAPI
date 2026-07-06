@@ -95,6 +95,66 @@ def test_login_unknown_email_is_401_with_same_message(client):
     assert unknown.json()["detail"] == wrong_pw.json()["detail"]  # no user enumeration
 
 
+# ---- Signup ----
+
+SIGNUP = {"email": "new@example.com", "password": "hypertrophy1", "display_name": "New Guy"}
+
+
+def test_signup_creates_client_and_logs_in(client):
+    res = client.post("/auth/signup", json=SIGNUP)
+    assert res.status_code == 201
+    body = res.json()
+    assert body["token"]
+    assert body["user"]["role"] == "client"
+    assert body["user"]["display_name"] == "New Guy"
+
+    # The returned token is immediately usable
+    me = client.get("/auth/me", headers={"Authorization": f"Bearer {body['token']}"})
+    assert me.status_code == 200
+    assert me.json()["email"] == "new@example.com"
+
+
+def test_signup_then_login_works(client):
+    client.post("/auth/signup", json=SIGNUP)
+    res = client.post(
+        "/auth/login", json={"email": "new@example.com", "password": "hypertrophy1"}
+    )
+    assert res.status_code == 200
+
+
+def test_signup_duplicate_email_is_400(client):
+    client.post("/auth/signup", json=SIGNUP)
+    res = client.post("/auth/signup", json={**SIGNUP, "display_name": "Impostor"})
+    assert res.status_code == 400
+    assert res.json()["detail"] == "Email already in use."
+
+
+def test_signup_email_is_case_insensitive(client):
+    # marcus@example.com is seeded — different casing must still collide
+    res = client.post(
+        "/auth/signup",
+        json={"email": "MARCUS@example.com", "password": "hypertrophy1", "display_name": "M"},
+    )
+    assert res.status_code == 400
+
+
+def test_signup_rejects_short_password_and_bad_email(client):
+    assert (
+        client.post(
+            "/auth/signup",
+            json={"email": "a@b.com", "password": "short", "display_name": "X"},
+        ).status_code
+        == 422
+    )
+    assert (
+        client.post(
+            "/auth/signup",
+            json={"email": "not-an-email", "password": "hypertrophy1", "display_name": "X"},
+        ).status_code
+        == 422
+    )
+
+
 # ---- Roster guard ----
 
 

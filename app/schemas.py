@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 
 # ---- Check-ins ----
 
@@ -167,12 +167,20 @@ class EvaluationHistoryItem(BaseModel):
     training_adjustments: List[str]
 
 
-# ---- Auth (dev stub) ----
+# ---- Auth ----
 
 
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    # users.display_name is NOT NULL — the coach roster and reports
+    # render it, so signup must collect it.
+    display_name: str = Field(min_length=1, max_length=80)
 
 
 class UserOut(BaseModel):
