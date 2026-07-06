@@ -1,6 +1,5 @@
 """Password hashing, JWT issue/verify, and auth dependencies."""
 
-import os
 import time
 from typing import Optional
 
@@ -10,14 +9,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.models import User
 
-# Dev fallback keeps local setup zero-config; production must set the env var.
-# (32+ bytes per RFC 7518 §3.2 for HS256.)
-JWT_SECRET = os.environ.get("TITAN_JWT_SECRET", "titan-metrics-dev-secret-do-not-use-in-prod")
 JWT_ALGORITHM = "HS256"
-TOKEN_TTL_SECONDS = 7 * 24 * 3600
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -35,8 +31,13 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 def create_token(user: User) -> str:
     now = int(time.time())
-    payload = {"sub": user.id, "role": user.role, "iat": now, "exp": now + TOKEN_TTL_SECONDS}
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    payload = {
+        "sub": user.id,
+        "role": user.role,
+        "iat": now,
+        "exp": now + settings.token_ttl_seconds,
+    }
+    return jwt.encode(payload, settings.jwt_secret, algorithm=JWT_ALGORITHM)
 
 
 def get_current_user(
@@ -50,7 +51,9 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     try:
-        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(
+            credentials.credentials, settings.jwt_secret, algorithms=[JWT_ALGORITHM]
+        )
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

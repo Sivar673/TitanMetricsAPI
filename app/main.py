@@ -1,20 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database import Base, engine
+from app.config import settings
 from app.routers import auth, coach, tracking
 
-Base.metadata.create_all(bind=engine)
+app = FastAPI(title="Titan Metrics API", version="0.2.0")
 
-app = FastAPI(title="Titan Metrics API", version="0.1.0")
-
-# Dev CORS: the Expo web preview runs on a different origin (localhost:8081).
-# Lock this down to real origins before deploying.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.cors_origin_list,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 app.include_router(auth.router)

@@ -1,14 +1,15 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./titan_metrics.db"
+from app.config import settings
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    # SQLite defaults to one-thread-per-connection; FastAPI serves
-    # requests from a threadpool, so this must be off.
-    connect_args={"check_same_thread": False},
+# SQLite defaults to one-thread-per-connection; FastAPI serves requests
+# from a threadpool, so that check must be off. Harmless for other DBs.
+_connect_args = (
+    {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
 )
+
+engine = create_engine(settings.database_url, connect_args=_connect_args)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

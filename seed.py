@@ -1,13 +1,19 @@
 """Populate the dev database with a coach, six clients, and ten weeks of
-check-ins and workouts. Idempotent: refuses to run against a non-empty DB.
+check-ins and workouts. Refuses to run against a non-empty DB.
 
+Schema is owned by Alembic — run migrations first:
+
+    .venv/bin/alembic upgrade head
     .venv/bin/python seed.py
 """
 
 import math
+import sys
 from datetime import date, timedelta
 
-from app.database import Base, SessionLocal, engine
+from sqlalchemy import inspect
+
+from app.database import SessionLocal, engine
 from app.models import CheckIn, User, WorkoutSession
 from app.security import hash_password
 
@@ -35,7 +41,9 @@ def monday_weeks_ago(n: int) -> date:
 
 
 def main() -> None:
-    Base.metadata.create_all(bind=engine)
+    if not inspect(engine).has_table("users"):
+        sys.exit("Schema missing — run `alembic upgrade head` first.")
+
     db = SessionLocal()
     try:
         if db.query(User).count() > 0:
