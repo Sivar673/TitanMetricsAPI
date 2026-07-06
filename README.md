@@ -27,3 +27,4 @@ Interactive docs at http://localhost:8000/docs.
 
 Response shapes mirror `src/types/api.ts` in the frontend repo; that file
 is the shared contract.
+# TitanMetricsAPI
