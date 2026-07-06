@@ -8,6 +8,7 @@ class User(Base):
 
     id = Column(String, primary_key=True, index=True)
     email = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
     display_name = Column(String, nullable=False)
     role = Column(String, nullable=False)  # "coach" | "client"
     phase = Column(String, nullable=True)  # prep | off_season | peak_week | recovery

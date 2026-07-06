@@ -9,8 +9,12 @@ from datetime import date, timedelta
 
 from app.database import Base, SessionLocal, engine
 from app.models import CheckIn, User, WorkoutSession
+from app.security import hash_password
 
 WEEKS = 10
+
+# Every seeded user gets this password. Dev only, obviously.
+DEV_PASSWORD = "titan123"
 
 CLIENTS = [
     # id, name, phase, weeks_out, start weight, lbs/week, bench start, squat start, macro base
@@ -38,8 +42,16 @@ def main() -> None:
             print("Database already has users — refusing to reseed. Delete titan_metrics.db first.")
             return
 
+        password_hash = hash_password(DEV_PASSWORD)
+
         db.add(
-            User(id="coach_1", email="coach@titanmetrics.com", display_name="Coach Rithish", role="coach")
+            User(
+                id="coach_1",
+                email="coach@titanmetrics.com",
+                password_hash=password_hash,
+                display_name="Coach Rithish",
+                role="coach",
+            )
         )
 
         for cid, name, phase, weeks_out, start_w, slope, bench0, squat0, macro_base in CLIENTS:
@@ -48,6 +60,7 @@ def main() -> None:
                 User(
                     id=cid,
                     email=f"{name.split()[0].lower()}@example.com",
+                    password_hash=password_hash,
                     display_name=name,
                     role="client",
                     phase=phase,

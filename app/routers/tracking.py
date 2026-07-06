@@ -7,19 +7,19 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import CheckIn, User, WorkoutSession
 from app.schemas import CheckInCreate, CheckInResponse, WorkoutCreate, WorkoutResponse
+from app.security import get_current_user
 
 router = APIRouter(prefix="/check-ins", tags=["tracking"])
 workouts_router = APIRouter(prefix="/workouts", tags=["tracking"])
 
 
-def _require_client(db: Session, client_id: str) -> User:
-    client = db.get(User, client_id)
-    if client is None or client.role != "client":
+def _require_own_client_record(payload_client_id: str, user: User) -> None:
+    """Clients submit their own data; nobody logs on someone else's behalf."""
+    if user.role != "client" or user.id != payload_client_id:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No client with id {client_id!r}.",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only submit records for your own account.",
         )
-    return client
 
 
 # Path is "" (not "/") so POST /check-ins works without a 307 redirect.
@@ -27,7 +27,10 @@ def _require_client(db: Session, client_id: str) -> User:
 def create_check_in(
     payload: CheckInCreate,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> CheckInResponse:
+    _require_own_client_record(payload.client_id, user)
+
     # -- Validation the schema can't express on its own --------------------
     logged = [w for w in payload.morning_weights_lbs if w is not None]
     if not logged:
@@ -49,8 +52,6 @@ def create_check_in(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="macro_adherent_days must be between 0 and 7.",
         )
-
-    _require_client(db, payload.client_id)
 
     # One check-in per client per week; resubmitting is a conflict, not a dupe row
     exists = (
@@ -100,7 +101,10 @@ def create_check_in(
 def log_workout(
     payload: WorkoutCreate,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> WorkoutResponse:
+    _require_own_client_record(payload.client_id, user)
+
     try:
         datetime.fromisoformat(payload.performed_at.replace("Z", "+00:00"))
     except ValueError:
@@ -114,8 +118,6 @@ def log_workout(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A workout needs at least one logged set.",
         )
-
-    _require_client(db, payload.client_id)
 
     session = WorkoutSession(
         client_id=payload.client_id,

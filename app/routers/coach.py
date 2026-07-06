@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.analytics import avg_fatigue, avg_weight, epley_1rm, week_monday
 from app.database import get_db
 from app.models import CheckIn, User, WorkoutSession
+from app.security import get_current_user, require_coach, require_self_or_coach
 from app.schemas import (
     ClientReportOut,
     ClientSummaryOut,
@@ -56,7 +57,10 @@ def _delta(
 
 
 @router.get("/coach/clients", response_model=List[ClientSummaryOut])
-def list_clients(db: Session = Depends(get_db)) -> List[ClientSummaryOut]:
+def list_clients(
+    db: Session = Depends(get_db),
+    _coach: User = Depends(require_coach),
+) -> List[ClientSummaryOut]:
     clients = db.query(User).filter(User.role == "client").order_by(User.display_name).all()
 
     out: List[ClientSummaryOut] = []
@@ -86,7 +90,12 @@ def list_clients(db: Session = Depends(get_db)) -> List[ClientSummaryOut]:
 
 
 @router.get("/clients/{client_id}/report", response_model=ClientReportOut)
-def client_report(client_id: str, db: Session = Depends(get_db)) -> ClientReportOut:
+def client_report(
+    client_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> ClientReportOut:
+    require_self_or_coach(client_id, user)
     client = _get_client(db, client_id)
 
     recent = _recent_check_ins(db, client_id, limit=3)
@@ -166,7 +175,12 @@ def client_report(client_id: str, db: Session = Depends(get_db)) -> ClientReport
 
 
 @router.get("/clients/{client_id}/progression", response_model=ProgressionOut)
-def client_progression(client_id: str, db: Session = Depends(get_db)) -> ProgressionOut:
+def client_progression(
+    client_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> ProgressionOut:
+    require_self_or_coach(client_id, user)
     _get_client(db, client_id)
 
     check_ins = (

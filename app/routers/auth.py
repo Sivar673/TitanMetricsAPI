@@ -4,26 +4,23 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
 from app.schemas import LoginRequest, LoginResponse, UserOut
+from app.security import create_token, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-# DEV STUB: no passwords, token is not a real JWT. Replace with proper
-# credential verification + signed tokens before anything public-facing.
 @router.post("/login", response_model=LoginResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> LoginResponse:
-    user = db.query(User).filter(User.email == payload.email).first()
-    if user is None:
-        # Dev convenience: fall back to the first user with the requested role
-        user = db.query(User).filter(User.role == payload.role).first()
-    if user is None:
+    user = db.query(User).filter(User.email == payload.email.strip().lower()).first()
+    # Same error for unknown email and wrong password — don't leak which
+    if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No matching user. Run seed.py to create dev users.",
+            detail="Invalid email or password.",
         )
 
     return LoginResponse(
-        token=f"dev-token-{user.id}",
+        token=create_token(user),
         user=UserOut(
             id=user.id,
             email=user.email,

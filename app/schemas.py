@@ -120,7 +120,7 @@ class ProgressionOut(BaseModel):
 
 class LoginRequest(BaseModel):
     email: str
-    role: str  # "coach" | "client"
+    password: str
 
 
 class UserOut(BaseModel):
