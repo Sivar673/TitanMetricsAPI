@@ -115,6 +115,43 @@ class ProgressionOut(BaseModel):
     strength_trends: List[StrengthTrend]
 
 
+# ---- AI Physique Coach ----
+
+
+class PhysiqueEvaluation(BaseModel):
+    """Structured verdict from the vision model. This schema is enforced
+    server-side by the Claude structured-outputs API, so every response
+    is guaranteed to parse."""
+
+    is_valid_submission: bool = Field(
+        description=(
+            "True only if all three images clearly show one person in the "
+            "requested poses with enough visibility to judge a physique."
+        )
+    )
+    validity_notes: Optional[str] = Field(
+        default=None,
+        description="If not valid: which pose/image is the problem and why.",
+    )
+    overall_score: int = Field(
+        ge=1,
+        le=10,
+        description="Overall Men's Physique package score, 1-10. Use 1 when invalid.",
+    )
+    strengths: List[str] = Field(
+        description="Specific standout attributes, referencing judging criteria."
+    )
+    weaknesses: List[str] = Field(
+        description="Specific detractors from the package, referencing criteria."
+    )
+    training_adjustments: List[str] = Field(
+        description=(
+            "Actionable programming changes, each tied to a named weakness, "
+            "with concrete exercises/volumes where possible."
+        )
+    )
+
+
 # ---- Auth (dev stub) ----
 
 

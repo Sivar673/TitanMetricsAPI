@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     token_ttl_seconds: int = 7 * 24 * 3600
     # Comma-separated exact origins, e.g. "https://app.titanmetrics.com"
     cors_origins: str = "http://localhost:8081"
+    # AI Physique Coach. Unset = feature returns 503 (not configured).
+    anthropic_api_key: str | None = None
+    anthropic_model: str = "claude-opus-4-8"
 
     @property
     def cors_origin_list(self) -> List[str]:
