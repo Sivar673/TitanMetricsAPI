@@ -3,3 +3,5 @@ __pycache__/
 *.pyc
 titan_metrics.db
 .env
+
+uploads/

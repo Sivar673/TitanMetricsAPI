@@ -14,7 +14,7 @@ from datetime import date, timedelta
 from sqlalchemy import inspect
 
 from app.database import SessionLocal, engine
-from app.models import CheckIn, User, WorkoutSession
+from app.models import CheckIn, PhysiqueEvaluationRecord, User, WorkoutSession
 from app.security import hash_password
 
 WEEKS = 10
@@ -135,8 +135,49 @@ def main() -> None:
                         )
                     )
 
+        # AI Physique Coach history for the demo client (c_1), scores
+        # trending up across the prep. All older than 24h so the seeded
+        # data never consumes the daily evaluation limit.
+        AI_EVALS = [
+            (10, 5.0, "Waist stays tight in the front pose",
+             "Lats don't flare — the V-taper reads narrow",
+             "Add 3 weekly sets of wide-grip pulldowns leaning into the stretch"),
+            (8, 5.5, "Lat width improving, taper starting to show",
+             "Side delts flat in the side pose",
+             "Increase lateral raise volume by 2 sets per week"),
+            (6, 6.0, "Shoulder caps rounder — lateral work is paying off",
+             "Rear delts disappear in the back pose",
+             "Add 3 weekly sets of reverse pec-deck"),
+            (4, 6.5, "Back double shows clear upper-back detail now",
+             "Abs visible but obliques soft under stage lighting",
+             "Add 2 weekly sets of hanging leg raises; hold conditioning steady"),
+            (2, 7.0, "Balanced front-to-back development, strong stage look",
+             "Left delt slightly behind the right in the front pose",
+             "Start pressing dumbbell work unilaterally, weak side first"),
+        ]
+        for weeks_ago, score, strength, weakness, adjustment in AI_EVALS:
+            stamp = monday_weeks_ago(weeks_ago).isoformat() + "T09:00:00+00:00"
+            db.add(
+                PhysiqueEvaluationRecord(
+                    user_id="c_1",
+                    created_at=stamp,
+                    front_image_path=f"c_1/{weeks_ago}w_front.jpg",
+                    side_image_path=f"c_1/{weeks_ago}w_side.jpg",
+                    back_image_path=f"c_1/{weeks_ago}w_back.jpg",
+                    is_valid_submission=1,
+                    validity_notes=None,
+                    overall_score=score,
+                    strengths=[strength],
+                    weaknesses=[weakness],
+                    training_adjustments=[adjustment],
+                )
+            )
+
         db.commit()
-        print(f"Seeded 1 coach, {len(CLIENTS)} clients, {WEEKS} weeks of history each.")
+        print(
+            f"Seeded 1 coach, {len(CLIENTS)} clients, {WEEKS} weeks of history each, "
+            f"{len(AI_EVALS)} AI evaluations for c_1."
+        )
     finally:
         db.close()
 

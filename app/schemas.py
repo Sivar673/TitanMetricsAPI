@@ -152,6 +152,21 @@ class PhysiqueEvaluation(BaseModel):
     )
 
 
+class EvaluationHistoryItem(BaseModel):
+    """A persisted evaluation, as returned by GET /ai/evaluations.
+    Image paths are intentionally not exposed until an authenticated
+    image-serving endpoint exists."""
+
+    id: int
+    created_at: str  # ISO 8601 UTC
+    is_valid_submission: bool
+    validity_notes: Optional[str]
+    overall_score: float
+    strengths: List[str]
+    weaknesses: List[str]
+    training_adjustments: List[str]
+
+
 # ---- Auth (dev stub) ----
 
 

@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, Column, ForeignKey, Integer, String
+from sqlalchemy import JSON, Column, Float, ForeignKey, Integer, String
 
 from app.database import Base
 
@@ -25,6 +25,29 @@ class CheckIn(Base):
     macro_adherent_days = Column(Integer, nullable=False)
     fatigue = Column(JSON, nullable=False)  # {marker: 1-5}
     notes = Column(String, nullable=True)
+
+
+class PhysiqueEvaluationRecord(Base):
+    """A persisted AI Physique Coach verdict, one row per evaluation.
+
+    Named ...Record to avoid clashing with the PhysiqueEvaluation
+    Pydantic schema that defines the AI's structured output.
+    """
+
+    __tablename__ = "physique_evaluations"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    created_at = Column(String, nullable=False)  # ISO 8601 UTC
+    front_image_path = Column(String, nullable=False)
+    side_image_path = Column(String, nullable=False)
+    back_image_path = Column(String, nullable=False)
+    is_valid_submission = Column(Integer, nullable=False)  # SQLite-friendly bool
+    validity_notes = Column(String, nullable=True)
+    overall_score = Column(Float, nullable=False)
+    strengths = Column(JSON, nullable=False)
+    weaknesses = Column(JSON, nullable=False)
+    training_adjustments = Column(JSON, nullable=False)
 
 
 class WorkoutSession(Base):

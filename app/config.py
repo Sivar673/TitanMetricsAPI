@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # AI Physique Coach. Unset = feature returns 503 (not configured).
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-opus-4-8"
+    # Financial guardrail: max Anthropic evaluations per user per 24h.
+    ai_daily_evaluation_limit: int = 2
+    upload_dir: str = "./uploads"
 
     @property
     def cors_origin_list(self) -> List[str]:
